@@ -1,0 +1,469 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import tkinter.font as tkfont  # Import the font module
+from views.preview_view import PreviewView
+
+
+class MainView(tk.Tk):
+    """
+    The main UI for the BEO Note-Taking Application.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.title("BEO Note-Taking Application")
+        self.controller = None
+        self.current_date_str = None
+        self.current_group_name = None
+        self.current_meeting_name = None
+        self.current_event_name = None
+        self.editing_event = False
+        self.create_widgets()
+
+    def set_controller(self, controller):
+        self.controller = controller
+        self.refresh_tree()
+        self.generate_text()
+
+    def create_widgets(self):
+        # Configure main window to be resizable
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)  # Treeview frame
+        self.rowconfigure(1, weight=1)  # Bottom frame with forms and preview
+
+        # Style configuration
+        style = ttk.Style()
+        style.configure("Treeview", rowheight=25)
+        default_font = tkfont.nametofont("TkDefaultFont")
+        default_font.configure(size=10)
+
+        # Top frame for the Treeview
+        self.tree_frame = ttk.Frame(self)
+        self.tree_frame.grid(row=0, column=0, sticky='nsew')
+
+        # Bottom frame for forms and preview
+        self.bottom_frame = ttk.Frame(self)
+        self.bottom_frame.grid(row=1, column=0, sticky='nsew')
+
+        # Configure grid weights for frames
+        self.tree_frame.columnconfigure(0, weight=1)
+        self.tree_frame.rowconfigure(0, weight=1)
+        self.bottom_frame.columnconfigure(0, weight=1)
+        self.bottom_frame.rowconfigure(0, weight=1)
+
+        # Create the Treeview widget in tree_frame
+        self.tree = ttk.Treeview(self.tree_frame)
+        self.tree.grid(row=0, column=0, sticky='nsew')
+
+        # Add a vertical scrollbar to the Treeview
+        tree_scrollbar = ttk.Scrollbar(self.tree_frame, orient="vertical", command=self.tree.yview)
+        tree_scrollbar.grid(row=0, column=1, sticky='ns')
+        self.tree.configure(yscrollcommand=tree_scrollbar.set)
+
+        # Define columns
+        self.tree['columns'] = ('Details',)
+        self.tree.column('#0', anchor='w', stretch=True)
+        self.tree.column('Details', anchor='w', stretch=True)
+        self.tree.heading('#0', text='Date/Group/Meeting/Event')
+        self.tree.heading('Details', text='Details')
+
+        # Bind selection event
+        self.tree.bind('<<TreeviewSelect>>', self.on_tree_select)
+
+        # Create notebook in bottom_frame
+        self.notebook = ttk.Notebook(self.bottom_frame)
+        self.notebook.grid(row=0, column=0, sticky='nsew')
+
+        # Configure bottom_frame to expand
+        self.bottom_frame.columnconfigure(0, weight=1)
+        self.bottom_frame.rowconfigure(0, weight=1)
+
+        # Create frames for notebook tabs
+        self.forms_frame = ttk.Frame(self.notebook)
+        self.preview_frame = ttk.Frame(self.notebook)
+
+        # Add frames to notebook
+        self.notebook.add(self.forms_frame, text='Forms')
+        self.notebook.add(self.preview_frame, text='Preview')
+
+        # Configure frames to expand
+        self.forms_frame.columnconfigure(0, weight=1)
+        self.forms_frame.rowconfigure(0, weight=1)
+        self.preview_frame.columnconfigure(0, weight=1)
+        self.preview_frame.rowconfigure(0, weight=1)
+
+        # Create form sections in forms_frame
+        self.create_date_management(self.forms_frame)
+        self.create_group_management(self.forms_frame)
+        self.create_meeting_management(self.forms_frame)
+        self.create_event_form(self.forms_frame)
+
+        # Preview View
+        self.preview_view = PreviewView(self.preview_frame)
+        self.preview_view.pack(fill=tk.BOTH, expand=True)
+
+    def create_date_management(self, parent):
+        date_frame = ttk.LabelFrame(parent, text="Date Management")
+        date_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        date_frame.columnconfigure(1, weight=1)
+
+        ttk.Label(date_frame, text="Date:").grid(row=0, column=0, sticky='e', padx=5, pady=5)
+        self.date_entry = ttk.Entry(date_frame)
+        self.date_entry.grid(row=0, column=1, sticky='we', padx=5, pady=5)
+
+        add_date_button = ttk.Button(date_frame, text="Add Date", command=self.on_add_date)
+        add_date_button.grid(row=0, column=2, padx=5, pady=5)
+
+        remove_date_button = ttk.Button(date_frame, text="Remove Date", command=self.on_remove_date)
+        remove_date_button.grid(row=0, column=3, padx=5, pady=5)
+
+    def create_group_management(self, parent):
+        group_frame = ttk.LabelFrame(parent, text="Group Management")
+        group_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        group_frame.columnconfigure(1, weight=1)
+
+        ttk.Label(group_frame, text="Group Name:").grid(row=0, column=0, sticky='e', padx=5, pady=5)
+        self.group_name_entry = ttk.Entry(group_frame)
+        self.group_name_entry.grid(row=0, column=1, sticky='we', padx=5, pady=5)
+
+        add_group_button = ttk.Button(group_frame, text="Add Group", command=self.on_add_group)
+        add_group_button.grid(row=0, column=2, padx=5, pady=5)
+
+        remove_group_button = ttk.Button(group_frame, text="Remove Group", command=self.on_remove_group)
+        remove_group_button.grid(row=0, column=3, padx=5, pady=5)
+
+    def create_meeting_management(self, parent):
+        meeting_frame = ttk.LabelFrame(parent, text="Meeting Management")
+        meeting_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        meeting_frame.columnconfigure(1, weight=1)
+        meeting_frame.columnconfigure(3, weight=1)
+
+        ttk.Label(meeting_frame, text="Meeting Name:").grid(row=0, column=0, sticky='e', padx=5, pady=5)
+        self.meeting_name_entry = ttk.Entry(meeting_frame)
+        self.meeting_name_entry.grid(row=0, column=1, sticky='we', padx=5, pady=5)
+
+        ttk.Label(meeting_frame, text="Location:").grid(row=0, column=2, sticky='e', padx=5, pady=5)
+        self.meeting_location_entry = ttk.Entry(meeting_frame)
+        self.meeting_location_entry.grid(row=0, column=3, sticky='we', padx=5, pady=5)
+
+        ttk.Label(meeting_frame, text="Equipment:").grid(row=1, column=0, sticky='e', padx=5, pady=5)
+        self.meeting_equipment_entry = ttk.Entry(meeting_frame)
+        self.meeting_equipment_entry.grid(row=1, column=1, columnspan=3, sticky='we', padx=5, pady=5)
+
+        ttk.Label(meeting_frame, text="Notes:").grid(row=2, column=0, sticky='ne', padx=5, pady=5)
+        self.meeting_notes_entry = tk.Text(meeting_frame, height=3)
+        self.meeting_notes_entry.grid(row=2, column=1, columnspan=3, sticky='we', padx=5, pady=5)
+
+        add_meeting_button = ttk.Button(meeting_frame, text="Add Meeting", command=self.on_add_meeting)
+        add_meeting_button.grid(row=0, column=4, padx=5, pady=5)
+
+        remove_meeting_button = ttk.Button(meeting_frame, text="Remove Meeting", command=self.on_remove_meeting)
+        remove_meeting_button.grid(row=1, column=4, padx=5, pady=5)
+
+    def create_event_form(self, parent):
+        event_frame = ttk.LabelFrame(parent, text="Event Management")
+        event_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        event_frame.columnconfigure(1, weight=1)
+        event_frame.columnconfigure(3, weight=1)
+
+        # Event Name
+        ttk.Label(event_frame, text="Event Name:").grid(row=0, column=0, sticky='e', padx=5, pady=5)
+        self.event_name_entry = ttk.Entry(event_frame)
+        self.event_name_entry.grid(row=0, column=1, sticky='we', padx=5, pady=5)
+
+        # Start Time
+        ttk.Label(event_frame, text="Start Time:").grid(row=1, column=0, sticky='e', padx=5, pady=5)
+        self.start_time_entry = ttk.Entry(event_frame)
+        self.start_time_entry.grid(row=1, column=1, sticky='we', padx=5, pady=5)
+
+        # End Time
+        ttk.Label(event_frame, text="End Time:").grid(row=1, column=2, sticky='e', padx=5, pady=5)
+        self.end_time_entry = ttk.Entry(event_frame)
+        self.end_time_entry.grid(row=1, column=3, sticky='we', padx=5, pady=5)
+
+        self.add_event_button = ttk.Button(event_frame, text="Add Event", command=self.on_add_event)
+        self.add_event_button.grid(row=0, column=4, padx=5, pady=5)
+
+        remove_event_button = ttk.Button(event_frame, text="Remove Event", command=self.on_remove_event)
+        remove_event_button.grid(row=1, column=4, padx=5, pady=5)
+
+    def on_tree_select(self, event):
+        selected_item = self.tree.focus()
+        item_tags = self.tree.item(selected_item, 'tags')
+        if 'event' in item_tags:
+            event_name = self.tree.item(selected_item, 'text')
+            meeting_item = self.tree.parent(selected_item)
+            meeting_name = self.tree.item(meeting_item, 'text')
+            group_item = self.tree.parent(meeting_item)
+            group_name = self.tree.item(group_item, 'text')
+            date_item = self.tree.parent(group_item)
+            date_str = self.tree.item(date_item, 'text')
+
+            event_data = self.controller.get_event(date_str, group_name, meeting_name, event_name)
+            if event_data:
+                self.populate_event_entries(event_data)
+                self.add_event_button.config(text="Update Event")
+                self.editing_event = True
+                self.current_event_name = event_name
+                self.current_meeting_name = meeting_name
+                self.current_group_name = group_name
+                self.current_date_str = date_str
+        elif 'meeting' in item_tags:
+            self.clear_event_entries()
+            self.add_event_button.config(text="Add Event")
+            self.editing_event = False
+            self.current_meeting_name = self.tree.item(selected_item, 'text')
+            group_item = self.tree.parent(selected_item)
+            self.current_group_name = self.tree.item(group_item, 'text')
+            date_item = self.tree.parent(group_item)
+            self.current_date_str = self.tree.item(date_item, 'text')
+        elif 'group' in item_tags:
+            self.clear_event_entries()
+            self.add_event_button.config(text="Add Event")
+            self.editing_event = False
+            self.current_group_name = self.tree.item(selected_item, 'text')
+            date_item = self.tree.parent(selected_item)
+            self.current_date_str = self.tree.item(date_item, 'text')
+        elif 'date' in item_tags:
+            self.clear_event_entries()
+            self.add_event_button.config(text="Add Event")
+            self.editing_event = False
+            self.current_date_str = self.tree.item(selected_item, 'text')
+
+    def on_add_date(self):
+        date_str = self.date_entry.get().strip()
+        if not date_str:
+            messagebox.showerror("Input Error", "Date cannot be empty.")
+            return
+        success = self.controller.add_date(date_str)
+        if success:
+            self.refresh_tree()
+            self.date_entry.delete(0, tk.END)
+            self.generate_text()
+
+    def on_remove_date(self):
+        if not self.current_date_str:
+            messagebox.showerror("Selection Error", "Please select a date to remove.")
+            return
+        confirm = messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete the date '{self.current_date_str}'?")
+        if confirm:
+            success = self.controller.remove_date(self.current_date_str)
+            if success:
+                self.refresh_tree()
+                self.current_date_str = None
+                self.generate_text()
+
+    def on_add_group(self):
+        group_name = self.group_name_entry.get().strip()
+        if not group_name or not self.current_date_str:
+            messagebox.showerror("Input Error", "Group name and date selection are required.")
+            return
+        success = self.controller.add_group(self.current_date_str, group_name)
+        if success:
+            self.refresh_tree()
+            self.group_name_entry.delete(0, tk.END)
+            self.generate_text()
+
+    def on_remove_group(self):
+        if not self.current_group_name or not self.current_date_str:
+            messagebox.showerror("Selection Error", "Please select a group to remove.")
+            return
+        confirm = messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete the group '{self.current_group_name}'?")
+        if confirm:
+            success = self.controller.remove_group(self.current_date_str, self.current_group_name)
+            if success:
+                self.refresh_tree()
+                self.current_group_name = None
+                self.generate_text()
+
+    def on_add_meeting(self):
+        meeting_name = self.meeting_name_entry.get().strip()
+        location = self.meeting_location_entry.get().strip()
+        equipment = self.meeting_equipment_entry.get().strip()
+        notes = self.meeting_notes_entry.get("1.0", tk.END).strip()
+        if not meeting_name or not self.current_group_name or not self.current_date_str:
+            messagebox.showerror("Input Error", "Meeting name, group, and date selection are required.")
+            return
+        success = self.controller.add_meeting(
+            self.current_date_str,
+            self.current_group_name,
+            meeting_name,
+            location,
+            equipment,
+            notes
+        )
+        if success:
+            self.refresh_tree()
+            self.meeting_name_entry.delete(0, tk.END)
+            self.meeting_location_entry.delete(0, tk.END)
+            self.meeting_equipment_entry.delete(0, tk.END)
+            self.meeting_notes_entry.delete("1.0", tk.END)
+            self.generate_text()
+
+    def on_remove_meeting(self):
+        if not self.current_meeting_name or not self.current_group_name or not self.current_date_str:
+            messagebox.showerror("Selection Error", "Please select a meeting to remove.")
+            return
+        confirm = messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete the meeting '{self.current_meeting_name}'?")
+        if confirm:
+            success = self.controller.remove_meeting(self.current_date_str, self.current_group_name, self.current_meeting_name)
+            if success:
+                self.refresh_tree()
+                self.current_meeting_name = None
+                self.generate_text()
+
+    def on_add_event(self):
+        event_name = self.event_name_entry.get().strip()
+        start_time = self.start_time_entry.get().strip()
+        end_time = self.end_time_entry.get().strip()
+        if not event_name or not self.current_meeting_name or not self.current_group_name or not self.current_date_str:
+            messagebox.showerror("Input Error", "Event name, meeting, group, and date selection are required.")
+            return
+        event_data = {
+            'event_name': event_name,
+            'start_time': start_time,
+            'end_time': end_time
+        }
+        success = self.controller.add_event(
+            self.current_date_str,
+            self.current_group_name,
+            self.current_meeting_name,
+            event_data
+        )
+        if success:
+            self.refresh_tree()
+            self.clear_event_entries()
+            self.generate_text()
+
+    def on_remove_event(self):
+        if not self.current_event_name or not self.current_meeting_name or not self.current_group_name or not self.current_date_str:
+            messagebox.showerror("Selection Error", "Please select an event to remove.")
+            return
+        confirm = messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete the event '{self.current_event_name}'?")
+        if confirm:
+            success = self.controller.remove_event(
+                self.current_date_str,
+                self.current_group_name,
+                self.current_meeting_name,
+                self.current_event_name
+            )
+            if success:
+                self.refresh_tree()
+                self.current_event_name = None
+                self.generate_text()
+
+    def refresh_tree(self):
+        # Save the current selection path
+        selected_item = self.tree.focus()
+        selection_path = self.get_item_path(selected_item)
+
+        # Save the expanded state of all items
+        expanded_items = self.get_expanded_items()
+
+        # Clear the tree
+        self.tree.delete(*self.tree.get_children())
+
+        # Rebuild the tree
+        for date in self.controller.get_all_dates():
+            date_id = self.tree.insert('', 'end', text=date.date_str, tags=('date',))
+            for group in date.get_all_groups():
+                group_id = self.tree.insert(date_id, 'end', text=group.name, tags=('group',))
+                for meeting in group.get_all_meetings():
+                    meeting_id = self.tree.insert(group_id, 'end', text=meeting.name, tags=('meeting',))
+                    for event in meeting.get_all_events():
+                        event_details = f"{event.start_time} - {event.end_time}"
+                        self.tree.insert(meeting_id, 'end', text=event.name, values=(event_details,), tags=('event',))
+
+        # Restore the expanded state
+        if expanded_items:
+            self.restore_expanded_items(expanded_items)
+
+        # Restore the previous selection
+        if selection_path:
+            self.select_item_by_path(selection_path)
+
+    def get_expanded_items(self):
+        """Returns a set of item paths that are expanded."""
+        expanded = set()
+
+        def _recursively_check_items(item, path):
+            if self.tree.item(item, 'open'):
+                item_text = self.tree.item(item, 'text')
+                new_path = path + (item_text,)
+                expanded.add(new_path)
+                for child in self.tree.get_children(item):
+                    _recursively_check_items(child, new_path)
+
+        for item in self.tree.get_children():
+            _recursively_check_items(item, ())
+
+        return expanded
+
+    def restore_expanded_items(self, expanded_items):
+        """Expands items whose path is in the expanded_items set."""
+        def _recursively_expand_items(item, path):
+            item_text = self.tree.item(item, 'text')
+            new_path = path + (item_text,)
+            if new_path in expanded_items:
+                self.tree.item(item, open=True)
+                for child in self.tree.get_children(item):
+                    _recursively_expand_items(child, new_path)
+
+        for item in self.tree.get_children():
+            _recursively_expand_items(item, ())
+
+    def get_item_path(self, item):
+        """Returns the path (tuple of texts) from the root to the specified item."""
+        path = []
+        while item:
+            text = self.tree.item(item, 'text')
+            path.insert(0, text)
+            item = self.tree.parent(item)
+        return tuple(path)
+
+    def select_item_by_path(self, path):
+        """Selects the item in the tree that matches the given path."""
+        parent = ''
+        item_id = ''
+        for node_text in path:
+            found = False
+            for child_id in self.tree.get_children(parent):
+                child_text = self.tree.item(child_id, 'text')
+                if child_text == node_text:
+                    parent = child_id
+                    item_id = child_id
+                    found = True
+                    break
+            if not found:
+                # Could not find the item; stop attempting to select
+                return
+        if item_id:
+            self.tree.focus(item_id)
+            self.tree.selection_set(item_id)
+            self.tree.see(item_id)
+
+    def clear_event_entries(self):
+        self.event_name_entry.delete(0, tk.END)
+        self.start_time_entry.delete(0, tk.END)
+        self.end_time_entry.delete(0, tk.END)
+
+    def populate_event_entries(self, event_data):
+        self.event_name_entry.delete(0, tk.END)
+        self.event_name_entry.insert(0, event_data['event_name'])
+
+        self.start_time_entry.delete(0, tk.END)
+        self.start_time_entry.insert(0, event_data['start_time'])
+
+        self.end_time_entry.delete(0, tk.END)
+        self.end_time_entry.insert(0, event_data.get('end_time', ''))
+
+    def generate_text(self):
+        formatted_text = self.controller.generate_formatted_text()
+        self.preview_view.update_preview(formatted_text)
+
+    def show_error_message(self, message):
+        messagebox.showerror("Error", message)
