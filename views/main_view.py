@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import tkinter.font as tkfont  # Import the font module
+import tkinter.font as tkfont
 from views.preview_view import PreviewView
 
 
@@ -176,15 +176,88 @@ class MainView(tk.Tk):
         self.event_name_entry.grid(row=0, column=1, sticky='we', padx=5, pady=5)
 
         # Start Time
-        ttk.Label(event_frame, text="Start Time:").grid(row=1, column=0, sticky='e', padx=5, pady=5)
-        self.start_time_entry = ttk.Entry(event_frame)
-        self.start_time_entry.grid(row=1, column=1, sticky='we', padx=5, pady=5)
+        ttk.Label(event_frame, text="Start Time:").grid(row=1, column=0, sticky='ne', padx=5, pady=5)
+        start_time_frame = ttk.Frame(event_frame)
+        start_time_frame.grid(row=1, column=1, sticky='w')
+
+        # Start Time Hour Dropdown
+        ttk.Label(start_time_frame, text="Hour:").grid(row=0, column=0, padx=2)
+        self.start_hour_var = tk.StringVar(value="1")
+        self.start_hour_menu = ttk.Combobox(
+            start_time_frame,
+            textvariable=self.start_hour_var,
+            values=[str(i) for i in range(1, 13)],
+            width=3,
+            state="readonly"
+        )
+        self.start_hour_menu.grid(row=0, column=1, padx=2)
+
+        # Start Time Minute Dropdown
+        ttk.Label(start_time_frame, text="Minute:").grid(row=0, column=2, padx=2)
+        self.start_minute_var = tk.StringVar(value="00")
+        self.start_minute_menu = ttk.Combobox(
+            start_time_frame,
+            textvariable=self.start_minute_var,
+            values=["00", "15", "30", "45"],
+            width=3,
+            state="readonly"
+        )
+        self.start_minute_menu.grid(row=0, column=3, padx=2)
+
+        # Start Time AM/PM Dropdown
+        ttk.Label(start_time_frame, text="AM/PM:").grid(row=0, column=4, padx=2)
+        self.start_am_pm_var = tk.StringVar(value="AM")
+        self.start_am_pm_menu = ttk.Combobox(
+            start_time_frame,
+            textvariable=self.start_am_pm_var,
+            values=["AM", "PM"],
+            width=3,
+            state="readonly"
+        )
+        self.start_am_pm_menu.grid(row=0, column=5, padx=2)
 
         # End Time
-        ttk.Label(event_frame, text="End Time:").grid(row=1, column=2, sticky='e', padx=5, pady=5)
-        self.end_time_entry = ttk.Entry(event_frame)
-        self.end_time_entry.grid(row=1, column=3, sticky='we', padx=5, pady=5)
+        ttk.Label(event_frame, text="End Time:").grid(row=1, column=2, sticky='ne', padx=5, pady=5)
+        end_time_frame = ttk.Frame(event_frame)
+        end_time_frame.grid(row=1, column=3, sticky='w')
 
+        # End Time Hour Dropdown
+        ttk.Label(end_time_frame, text="Hour:").grid(row=0, column=0, padx=2)
+        self.end_hour_var = tk.StringVar(value="")
+        self.end_hour_menu = ttk.Combobox(
+            end_time_frame,
+            textvariable=self.end_hour_var,
+            values=[str(i) for i in range(1, 13)],
+            width=3,
+            state="readonly"
+        )
+        self.end_hour_menu.grid(row=0, column=1, padx=2)
+
+        # End Time Minute Dropdown
+        ttk.Label(end_time_frame, text="Minute:").grid(row=0, column=2, padx=2)
+        self.end_minute_var = tk.StringVar(value="")
+        self.end_minute_menu = ttk.Combobox(
+            end_time_frame,
+            textvariable=self.end_minute_var,
+            values=["00", "15", "30", "45"],
+            width=3,
+            state="readonly"
+        )
+        self.end_minute_menu.grid(row=0, column=3, padx=2)
+
+        # End Time AM/PM Dropdown
+        ttk.Label(end_time_frame, text="AM/PM:").grid(row=0, column=4, padx=2)
+        self.end_am_pm_var = tk.StringVar(value="")
+        self.end_am_pm_menu = ttk.Combobox(
+            end_time_frame,
+            textvariable=self.end_am_pm_var,
+            values=["AM", "PM"],
+            width=3,
+            state="readonly"
+        )
+        self.end_am_pm_menu.grid(row=0, column=5, padx=2)
+
+        # Add and Remove Event Buttons
         self.add_event_button = ttk.Button(event_frame, text="Add Event", command=self.on_add_event)
         self.add_event_button.grid(row=0, column=4, padx=5, pady=5)
 
@@ -318,11 +391,28 @@ class MainView(tk.Tk):
 
     def on_add_event(self):
         event_name = self.event_name_entry.get().strip()
-        start_time = self.start_time_entry.get().strip()
-        end_time = self.end_time_entry.get().strip()
+
+        # Construct Start Time
+        start_hour = self.start_hour_var.get()
+        start_minute = self.start_minute_var.get()
+        start_am_pm = self.start_am_pm_var.get()
+        if not start_hour or not start_minute or not start_am_pm:
+            messagebox.showerror("Input Error", "Please select a valid start time.")
+            return
+        start_time = f"{start_hour}:{start_minute} {start_am_pm}"
+
+        # Construct End Time
+        end_time = ""
+        end_hour = self.end_hour_var.get()
+        end_minute = self.end_minute_var.get()
+        end_am_pm = self.end_am_pm_var.get()
+        if end_hour and end_minute and end_am_pm:
+            end_time = f"{end_hour}:{end_minute} {end_am_pm}"
+
         if not event_name or not self.current_meeting_name or not self.current_group_name or not self.current_date_str:
             messagebox.showerror("Input Error", "Event name, meeting, group, and date selection are required.")
             return
+
         event_data = {
             'event_name': event_name,
             'start_time': start_time,
@@ -448,18 +538,44 @@ class MainView(tk.Tk):
 
     def clear_event_entries(self):
         self.event_name_entry.delete(0, tk.END)
-        self.start_time_entry.delete(0, tk.END)
-        self.end_time_entry.delete(0, tk.END)
+        self.start_hour_var.set("1")
+        self.start_minute_var.set("00")
+        self.start_am_pm_var.set("AM")
+        self.end_hour_var.set("")
+        self.end_minute_var.set("")
+        self.end_am_pm_var.set("")
 
     def populate_event_entries(self, event_data):
         self.event_name_entry.delete(0, tk.END)
         self.event_name_entry.insert(0, event_data['event_name'])
 
-        self.start_time_entry.delete(0, tk.END)
-        self.start_time_entry.insert(0, event_data['start_time'])
+        # Parse Start Time
+        start_time = event_data['start_time']
+        if start_time:
+            try:
+                start_hour_minute, start_am_pm = start_time.strip().split()
+                start_hour, start_minute = start_hour_minute.strip().split(':')
+                self.start_hour_var.set(start_hour)
+                self.start_minute_var.set(start_minute)
+                self.start_am_pm_var.set(start_am_pm)
+            except ValueError:
+                pass  # Handle parsing errors if necessary
 
-        self.end_time_entry.delete(0, tk.END)
-        self.end_time_entry.insert(0, event_data.get('end_time', ''))
+        # Parse End Time if it exists
+        end_time = event_data.get('end_time', '')
+        if end_time:
+            try:
+                end_hour_minute, end_am_pm = end_time.strip().split()
+                end_hour, end_minute = end_hour_minute.strip().split(':')
+                self.end_hour_var.set(end_hour)
+                self.end_minute_var.set(end_minute)
+                self.end_am_pm_var.set(end_am_pm)
+            except ValueError:
+                pass
+        else:
+            self.end_hour_var.set("")
+            self.end_minute_var.set("")
+            self.end_am_pm_var.set("")
 
     def generate_text(self):
         formatted_text = self.controller.generate_formatted_text()
