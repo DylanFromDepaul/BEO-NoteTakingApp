@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import tkinter.font as tkfont
 from views.preview_view import PreviewView
+from views.equipment_view import EquipmentView
+from views.event_view import EventView
 
 
 class MainView(tk.Tk):
@@ -97,6 +99,7 @@ class MainView(tk.Tk):
         self.create_group_management(self.forms_frame)
         self.create_meeting_management(self.forms_frame)
         self.create_event_form(self.forms_frame)
+        self.create_equipment_management(self.forms_frame)
 
         # Preview View
         self.preview_view = PreviewView(self.preview_frame)
@@ -149,14 +152,6 @@ class MainView(tk.Tk):
         self.meeting_location_entry = ttk.Entry(meeting_frame)
         self.meeting_location_entry.grid(row=0, column=3, sticky='we', padx=5, pady=5)
 
-        ttk.Label(meeting_frame, text="Equipment:").grid(row=1, column=0, sticky='e', padx=5, pady=5)
-        self.meeting_equipment_entry = ttk.Entry(meeting_frame)
-        self.meeting_equipment_entry.grid(row=1, column=1, columnspan=3, sticky='we', padx=5, pady=5)
-
-        ttk.Label(meeting_frame, text="Notes:").grid(row=2, column=0, sticky='ne', padx=5, pady=5)
-        self.meeting_notes_entry = tk.Text(meeting_frame, height=3)
-        self.meeting_notes_entry.grid(row=2, column=1, columnspan=3, sticky='we', padx=5, pady=5)
-
         add_meeting_button = ttk.Button(meeting_frame, text="Add Meeting", command=self.on_add_meeting)
         add_meeting_button.grid(row=0, column=4, padx=5, pady=5)
 
@@ -168,7 +163,6 @@ class MainView(tk.Tk):
         event_frame.pack(fill=tk.X, padx=10, pady=5)
 
         event_frame.columnconfigure(1, weight=1)
-        event_frame.columnconfigure(3, weight=1)
 
         # Event Name
         ttk.Label(event_frame, text="Event Name:").grid(row=0, column=0, sticky='e', padx=5, pady=5)
@@ -176,136 +170,141 @@ class MainView(tk.Tk):
         self.event_name_entry.grid(row=0, column=1, sticky='we', padx=5, pady=5)
 
         # Start Time
-        ttk.Label(event_frame, text="Start Time:").grid(row=1, column=0, sticky='ne', padx=5, pady=5)
+        ttk.Label(event_frame, text="Start Time:").grid(row=1, column=0, sticky='e', padx=5, pady=5)
+
         start_time_frame = ttk.Frame(event_frame)
-        start_time_frame.grid(row=1, column=1, sticky='w')
+        start_time_frame.grid(row=1, column=1, sticky='w', padx=5, pady=5)
 
-        # Start Time Hour Dropdown
-        ttk.Label(start_time_frame, text="Hour:").grid(row=0, column=0, padx=2)
-        self.start_hour_var = tk.StringVar(value="1")
-        self.start_hour_menu = ttk.Combobox(
-            start_time_frame,
-            textvariable=self.start_hour_var,
-            values=[str(i) for i in range(1, 13)],
-            width=3,
-            state="readonly"
-        )
-        self.start_hour_menu.grid(row=0, column=1, padx=2)
+        start_hours = [str(h).zfill(2) for h in range(1, 13)]
+        start_minutes = [str(m).zfill(2) for m in range(0, 60, 5)]
+        start_am_pm = ['AM', 'PM']
 
-        # Start Time Minute Dropdown
-        ttk.Label(start_time_frame, text="Minute:").grid(row=0, column=2, padx=2)
-        self.start_minute_var = tk.StringVar(value="00")
-        self.start_minute_menu = ttk.Combobox(
-            start_time_frame,
-            textvariable=self.start_minute_var,
-            values=["00", "15", "30", "45"],
-            width=3,
-            state="readonly"
-        )
-        self.start_minute_menu.grid(row=0, column=3, padx=2)
+        self.start_hour_var = tk.StringVar(value='01')
+        self.start_minute_var = tk.StringVar(value='00')
+        self.start_am_pm_var = tk.StringVar(value='AM')
 
-        # Start Time AM/PM Dropdown
-        ttk.Label(start_time_frame, text="AM/PM:").grid(row=0, column=4, padx=2)
-        self.start_am_pm_var = tk.StringVar(value="AM")
-        self.start_am_pm_menu = ttk.Combobox(
-            start_time_frame,
-            textvariable=self.start_am_pm_var,
-            values=["AM", "PM"],
-            width=3,
-            state="readonly"
-        )
-        self.start_am_pm_menu.grid(row=0, column=5, padx=2)
+        ttk.OptionMenu(start_time_frame, self.start_hour_var, self.start_hour_var.get(), *start_hours).pack(side=tk.LEFT)
+        ttk.Label(start_time_frame, text=":").pack(side=tk.LEFT)
+        ttk.OptionMenu(start_time_frame, self.start_minute_var, self.start_minute_var.get(), *start_minutes).pack(side=tk.LEFT)
+        ttk.OptionMenu(start_time_frame, self.start_am_pm_var, self.start_am_pm_var.get(), *start_am_pm).pack(side=tk.LEFT)
 
         # End Time
-        ttk.Label(event_frame, text="End Time:").grid(row=1, column=2, sticky='ne', padx=5, pady=5)
+        ttk.Label(event_frame, text="End Time:").grid(row=2, column=0, sticky='e', padx=5, pady=5)
+
         end_time_frame = ttk.Frame(event_frame)
-        end_time_frame.grid(row=1, column=3, sticky='w')
+        end_time_frame.grid(row=2, column=1, sticky='w', padx=5, pady=5)
 
-        # End Time Hour Dropdown
-        ttk.Label(end_time_frame, text="Hour:").grid(row=0, column=0, padx=2)
-        self.end_hour_var = tk.StringVar(value="")
-        self.end_hour_menu = ttk.Combobox(
-            end_time_frame,
-            textvariable=self.end_hour_var,
-            values=[str(i) for i in range(1, 13)],
-            width=3,
-            state="readonly"
-        )
-        self.end_hour_menu.grid(row=0, column=1, padx=2)
+        end_hours = [str(h).zfill(2) for h in range(1, 13)]
+        end_minutes = [str(m).zfill(2) for m in range(0, 60, 5)]
+        end_am_pm = ['AM', 'PM']
 
-        # End Time Minute Dropdown
-        ttk.Label(end_time_frame, text="Minute:").grid(row=0, column=2, padx=2)
-        self.end_minute_var = tk.StringVar(value="")
-        self.end_minute_menu = ttk.Combobox(
-            end_time_frame,
-            textvariable=self.end_minute_var,
-            values=["00", "15", "30", "45"],
-            width=3,
-            state="readonly"
-        )
-        self.end_minute_menu.grid(row=0, column=3, padx=2)
+        self.end_hour_var = tk.StringVar(value='01')
+        self.end_minute_var = tk.StringVar(value='00')
+        self.end_am_pm_var = tk.StringVar(value='AM')
 
-        # End Time AM/PM Dropdown
-        ttk.Label(end_time_frame, text="AM/PM:").grid(row=0, column=4, padx=2)
-        self.end_am_pm_var = tk.StringVar(value="")
-        self.end_am_pm_menu = ttk.Combobox(
-            end_time_frame,
-            textvariable=self.end_am_pm_var,
-            values=["AM", "PM"],
-            width=3,
-            state="readonly"
-        )
-        self.end_am_pm_menu.grid(row=0, column=5, padx=2)
+        ttk.OptionMenu(end_time_frame, self.end_hour_var, self.end_hour_var.get(), *end_hours).pack(side=tk.LEFT)
+        ttk.Label(end_time_frame, text=":").pack(side=tk.LEFT)
+        ttk.OptionMenu(end_time_frame, self.end_minute_var, self.end_minute_var.get(), *end_minutes).pack(side=tk.LEFT)
+        ttk.OptionMenu(end_time_frame, self.end_am_pm_var, self.end_am_pm_var.get(), *end_am_pm).pack(side=tk.LEFT)
 
-        # Add and Remove Event Buttons
-        self.add_event_button = ttk.Button(event_frame, text="Add Event", command=self.on_add_event)
-        self.add_event_button.grid(row=0, column=4, padx=5, pady=5)
+        # Buttons
+        button_frame = ttk.Frame(event_frame)
+        button_frame.grid(row=3, column=1, sticky='e', padx=5, pady=5)
+        add_event_button = ttk.Button(button_frame, text="Add Event", command=self.on_add_event)
+        add_event_button.pack(side=tk.LEFT, padx=5)
+        remove_event_button = ttk.Button(button_frame, text="Remove Event", command=self.on_remove_event)
+        remove_event_button.pack(side=tk.LEFT)
 
-        remove_event_button = ttk.Button(event_frame, text="Remove Event", command=self.on_remove_event)
-        remove_event_button.grid(row=1, column=4, padx=5, pady=5)
+    def on_event_select(self, selected_event_name):
+        self.current_event_name = selected_event_name
+        date_str = self.current_date_str
+        group_name = self.current_group_name
+        meeting_name = self.current_meeting_name
+
+        if not date_str or not group_name or not meeting_name:
+            return
+
+        event_data = self.controller.get_event(date_str, group_name, meeting_name, selected_event_name)
+        if event_data:
+            # Populate event fields
+            self.event_name_entry.delete(0, tk.END)
+            self.event_name_entry.insert(0, event_data['event_name'])
+            self.event_start_time_entry.delete(0, tk.END)
+            self.event_start_time_entry.insert(0, event_data['start_time'])
+            self.event_end_time_entry.delete(0, tk.END)
+            self.event_end_time_entry.insert(0, event_data['end_time'])
+
+            # Populate equipment and notes
+            self.equipment_view.equipment_entry.delete(0, tk.END)
+            self.equipment_view.equipment_entry.insert(0, event_data.get('equipment', ''))
+            self.equipment_view.notes_entry.delete("1.0", tk.END)
+            self.equipment_view.notes_entry.insert("1.0", event_data.get('notes', ''))
+
+    def create_equipment_management(self, parent):
+        equipment_frame = ttk.LabelFrame(parent, text="Equipment Management")
+        equipment_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        equipment_frame.columnconfigure(1, weight=1)
+
+        # Equipment Entry
+        ttk.Label(equipment_frame, text="Equipment:").grid(row=0, column=0, sticky='e', padx=5, pady=5)
+        self.equipment_entry = ttk.Entry(equipment_frame)
+        self.equipment_entry.grid(row=0, column=1, sticky='we', padx=5, pady=5)
+
+        # Notes Entry
+        ttk.Label(equipment_frame, text="Notes:").grid(row=1, column=0, sticky='ne', padx=5, pady=5)
+        self.notes_entry = tk.Text(equipment_frame, height=3)
+        self.notes_entry.grid(row=1, column=1, sticky='we', padx=5, pady=5)
+
+        # Add and Remove Buttons
+        button_frame = ttk.Frame(equipment_frame)
+        button_frame.grid(row=2, column=1, sticky='e', padx=5, pady=5)
+        add_notes_button = ttk.Button(button_frame, text="Add Notes", command=self.on_add_notes)
+        add_notes_button.pack(side=tk.LEFT, padx=5)
+        remove_notes_button = ttk.Button(button_frame, text="Remove Notes", command=self.on_remove_notes)
+        remove_notes_button.pack(side=tk.LEFT)
 
     def on_tree_select(self, event):
         selected_item = self.tree.focus()
+        item_text = self.tree.item(selected_item, 'text')
         item_tags = self.tree.item(selected_item, 'tags')
-        if 'event' in item_tags:
-            event_name = self.tree.item(selected_item, 'text')
-            meeting_item = self.tree.parent(selected_item)
-            meeting_name = self.tree.item(meeting_item, 'text')
-            group_item = self.tree.parent(meeting_item)
-            group_name = self.tree.item(group_item, 'text')
-            date_item = self.tree.parent(group_item)
-            date_str = self.tree.item(date_item, 'text')
 
-            event_data = self.controller.get_event(date_str, group_name, meeting_name, event_name)
-            if event_data:
-                self.populate_event_entries(event_data)
-                self.add_event_button.config(text="Update Event")
-                self.editing_event = True
-                self.current_event_name = event_name
-                self.current_meeting_name = meeting_name
-                self.current_group_name = group_name
-                self.current_date_str = date_str
-        elif 'meeting' in item_tags:
-            self.clear_event_entries()
-            self.add_event_button.config(text="Add Event")
-            self.editing_event = False
-            self.current_meeting_name = self.tree.item(selected_item, 'text')
-            group_item = self.tree.parent(selected_item)
-            self.current_group_name = self.tree.item(group_item, 'text')
-            date_item = self.tree.parent(group_item)
-            self.current_date_str = self.tree.item(date_item, 'text')
+        if 'date' in item_tags:
+            self.current_date_str = item_text
+            self.current_group_name = None
+            self.current_meeting_name = None
+            self.current_event_name = None
+            self.clear_equipment_entries()
         elif 'group' in item_tags:
-            self.clear_event_entries()
-            self.add_event_button.config(text="Add Event")
-            self.editing_event = False
-            self.current_group_name = self.tree.item(selected_item, 'text')
-            date_item = self.tree.parent(selected_item)
-            self.current_date_str = self.tree.item(date_item, 'text')
-        elif 'date' in item_tags:
-            self.clear_event_entries()
-            self.add_event_button.config(text="Add Event")
-            self.editing_event = False
-            self.current_date_str = self.tree.item(selected_item, 'text')
+            self.current_group_name = item_text
+            parent_item = self.tree.parent(selected_item)
+            self.current_date_str = self.tree.item(parent_item, 'text')
+            self.current_meeting_name = None
+            self.current_event_name = None
+            self.clear_equipment_entries()
+        elif 'meeting' in item_tags:
+            self.current_meeting_name = item_text
+            parent_item = self.tree.parent(selected_item)
+            self.current_group_name = self.tree.item(parent_item, 'text')
+            grandparent_item = self.tree.parent(parent_item)
+            self.current_date_str = self.tree.item(grandparent_item, 'text')
+            self.current_event_name = None
+
+            # Populate equipment and notes for the selected meeting
+            meeting_data = self.controller.get_meeting(self.current_date_str, self.current_group_name, self.current_meeting_name)
+            if meeting_data:
+                self.equipment_entry.delete(0, tk.END)
+                self.equipment_entry.insert(0, meeting_data.get('equipment', ''))
+                self.notes_entry.delete("1.0", tk.END)
+                self.notes_entry.insert("1.0", meeting_data.get('notes', ''))
+        elif 'event' in item_tags:
+            self.current_event_name = item_text
+            parent_item = self.tree.parent(selected_item)
+            self.current_meeting_name = self.tree.item(parent_item, 'text')
+            grandparent_item = self.tree.parent(parent_item)
+            self.current_group_name = self.tree.item(grandparent_item, 'text')
+            great_grandparent_item = self.tree.parent(grandparent_item)
+            self.current_date_str = self.tree.item(great_grandparent_item, 'text')
 
     def on_add_date(self):
         date_str = self.date_entry.get().strip()
@@ -317,6 +316,9 @@ class MainView(tk.Tk):
             self.refresh_tree()
             self.date_entry.delete(0, tk.END)
             self.generate_text()
+            self.current_date_str = date_str
+            # Remove or comment out the message box line below
+            # messagebox.showinfo("Date Added", f"Date '{date_str}' added and selected.")
 
     def on_remove_date(self):
         if not self.current_date_str:
@@ -340,6 +342,8 @@ class MainView(tk.Tk):
             self.refresh_tree()
             self.group_name_entry.delete(0, tk.END)
             self.generate_text()
+            # Optionally set current_group_name
+            self.current_group_name = group_name
 
     def on_remove_group(self):
         if not self.current_group_name or not self.current_date_str:
@@ -356,8 +360,6 @@ class MainView(tk.Tk):
     def on_add_meeting(self):
         meeting_name = self.meeting_name_entry.get().strip()
         location = self.meeting_location_entry.get().strip()
-        equipment = self.meeting_equipment_entry.get().strip()
-        notes = self.meeting_notes_entry.get("1.0", tk.END).strip()
         if not meeting_name or not self.current_group_name or not self.current_date_str:
             messagebox.showerror("Input Error", "Meeting name, group, and date selection are required.")
             return
@@ -365,16 +367,12 @@ class MainView(tk.Tk):
             self.current_date_str,
             self.current_group_name,
             meeting_name,
-            location,
-            equipment,
-            notes
+            location
         )
         if success:
             self.refresh_tree()
             self.meeting_name_entry.delete(0, tk.END)
             self.meeting_location_entry.delete(0, tk.END)
-            self.meeting_equipment_entry.delete(0, tk.END)
-            self.meeting_notes_entry.delete("1.0", tk.END)
             self.generate_text()
 
     def on_remove_meeting(self):
@@ -402,28 +400,34 @@ class MainView(tk.Tk):
         start_time = f"{start_hour}:{start_minute} {start_am_pm}"
 
         # Construct End Time
-        end_time = ""
         end_hour = self.end_hour_var.get()
         end_minute = self.end_minute_var.get()
         end_am_pm = self.end_am_pm_var.get()
         if end_hour and end_minute and end_am_pm:
             end_time = f"{end_hour}:{end_minute} {end_am_pm}"
+        else:
+            end_time = ''
 
+        # Validate inputs
         if not event_name or not self.current_meeting_name or not self.current_group_name or not self.current_date_str:
             messagebox.showerror("Input Error", "Event name, meeting, group, and date selection are required.")
             return
 
+        # Prepare event data
         event_data = {
             'event_name': event_name,
             'start_time': start_time,
             'end_time': end_time
         }
+
+        # Add event via controller
         success = self.controller.add_event(
             self.current_date_str,
             self.current_group_name,
             self.current_meeting_name,
             event_data
         )
+
         if success:
             self.refresh_tree()
             self.clear_event_entries()
@@ -466,7 +470,13 @@ class MainView(tk.Tk):
                     meeting_id = self.tree.insert(group_id, 'end', text=meeting.name, tags=('meeting',))
                     for event in meeting.get_all_events():
                         event_details = f"{event.start_time} - {event.end_time}"
-                        self.tree.insert(meeting_id, 'end', text=event.name, values=(event_details,), tags=('event',))
+                        self.tree.insert(
+                            meeting_id,
+                            'end',
+                            text=event.name,
+                            values=(event_details,),
+                            tags=('event',)
+                        )
 
         # Restore the expanded state
         if expanded_items:
@@ -538,44 +548,21 @@ class MainView(tk.Tk):
 
     def clear_event_entries(self):
         self.event_name_entry.delete(0, tk.END)
-        self.start_hour_var.set("1")
-        self.start_minute_var.set("00")
-        self.start_am_pm_var.set("AM")
-        self.end_hour_var.set("")
-        self.end_minute_var.set("")
-        self.end_am_pm_var.set("")
+        # Reset time variables
+        self.start_hour_var.set('01')
+        self.start_minute_var.set('00')
+        self.start_am_pm_var.set('AM')
+        self.end_hour_var.set('01')
+        self.end_minute_var.set('00')
+        self.end_am_pm_var.set('AM')
 
     def populate_event_entries(self, event_data):
         self.event_name_entry.delete(0, tk.END)
         self.event_name_entry.insert(0, event_data['event_name'])
-
-        # Parse Start Time
-        start_time = event_data['start_time']
-        if start_time:
-            try:
-                start_hour_minute, start_am_pm = start_time.strip().split()
-                start_hour, start_minute = start_hour_minute.strip().split(':')
-                self.start_hour_var.set(start_hour)
-                self.start_minute_var.set(start_minute)
-                self.start_am_pm_var.set(start_am_pm)
-            except ValueError:
-                pass  # Handle parsing errors if necessary
-
-        # Parse End Time if it exists
-        end_time = event_data.get('end_time', '')
-        if end_time:
-            try:
-                end_hour_minute, end_am_pm = end_time.strip().split()
-                end_hour, end_minute = end_hour_minute.strip().split(':')
-                self.end_hour_var.set(end_hour)
-                self.end_minute_var.set(end_minute)
-                self.end_am_pm_var.set(end_am_pm)
-            except ValueError:
-                pass
-        else:
-            self.end_hour_var.set("")
-            self.end_minute_var.set("")
-            self.end_am_pm_var.set("")
+        self.event_start_time_entry.delete(0, tk.END)
+        self.event_start_time_entry.insert(0, event_data['start_time'])
+        self.event_end_time_entry.delete(0, tk.END)
+        self.event_end_time_entry.insert(0, event_data['end_time'])
 
     def generate_text(self):
         formatted_text = self.controller.generate_formatted_text()
@@ -583,3 +570,48 @@ class MainView(tk.Tk):
 
     def show_error_message(self, message):
         messagebox.showerror("Error", message)
+
+    def on_add_notes(self):
+        equipment = self.equipment_entry.get().strip()
+        notes = self.notes_entry.get("1.0", tk.END).strip()
+
+        if not self.current_meeting_name or not self.current_group_name or not self.current_date_str:
+            messagebox.showerror("Input Error", "Please select a meeting to add equipment and notes.")
+            return
+
+        success = self.controller.add_equipment_notes_to_meeting(
+            self.current_date_str,
+            self.current_group_name,
+            self.current_meeting_name,
+            equipment,
+            notes
+        )
+        if success:
+            self.clear_equipment_entries()
+            self.generate_text()
+            # Remove or comment out the message box line below
+            # messagebox.showinfo("Success", "Equipment and Notes added to the meeting.")
+
+    def on_remove_notes(self):
+        if not self.current_meeting_name or not self.current_group_name or not self.current_date_str:
+            messagebox.showerror("Input Error", "Please select a meeting to remove equipment and notes.")
+            return
+
+        success = self.controller.remove_equipment_notes_from_meeting(
+            self.current_date_str,
+            self.current_group_name,
+            self.current_meeting_name
+        )
+        if success:
+            self.clear_equipment_entries()
+            self.generate_text()
+            messagebox.showinfo("Success", "Equipment and Notes removed from the meeting.")
+
+    def clear_equipment_entries(self):
+        self.equipment_entry.delete(0, tk.END)
+        self.notes_entry.delete("1.0", tk.END)
+
+    def create_tree_view(self, parent):
+        self.tree = ttk.Treeview(parent)
+        self.tree.pack(fill=tk.BOTH, expand=True)
+        self.tree.bind('<<TreeviewSelect>>', self.on_tree_select)
