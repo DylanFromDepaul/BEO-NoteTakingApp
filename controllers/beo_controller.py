@@ -152,19 +152,30 @@ class BEOController:
         formatted_text = ""
         for date in self.model.get_all_dates():
             formatted_text += f"{date.date_str}\n\n"
+
+            # Add "Groups In House" section
+            formatted_text += "Groups In House:\n"
+            for group in date.get_all_groups():
+                formatted_text += f"{group.name}\n"
+            formatted_text += "\n"
+
+            # Now detail each group, meeting, and events
             for group in date.get_all_groups():
                 formatted_text += f"{group.name}\n"
                 for meeting in group.get_all_meetings():
                     formatted_text += f"{meeting.name}\n"
                     if meeting.location:
                         formatted_text += f"Location: {meeting.location}\n"
-                    if meeting.equipment:  # Include equipment details
-                        formatted_text += f"Equipment: {meeting.equipment}\n"
-                    if meeting.notes:
-                        formatted_text += f"{meeting.notes}\n"
+
+                    # Place event details above equipment and notes
                     for event in meeting.get_all_events():
                         event_details = f"{event.start_time} - {event.end_time}"
                         formatted_text += f"{event.name}: {event_details}\n"
+
+                    if meeting.equipment:
+                        formatted_text += f"Equipment: {meeting.equipment}\n"
+                    if meeting.notes:
+                        formatted_text += f"{meeting.notes}\n"
                     formatted_text += "\n"
                 formatted_text += "\n"
             formatted_text += "\n"
